@@ -9,8 +9,8 @@
     }
 </style>
 <body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
-<script src="https://unpkg.com/three@0.85.0/examples/js/controls/OrbitControls.js"></script>
+<script src="http://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <script>
 
     // The distance between the two points is printed in the console
@@ -54,9 +54,12 @@
             }
         }
     }
+    let midpointX = (closestA.position.x + closestB.position.x)/2
+    let midpointY = (closestA.position.y + closestB.position.y)/2
+    let midpointZ = (closestA.position.z + closestB.position.z)/2
 
     // It was hard finding them, so I just automatically move the camera now
-    camera.position.set(closestA.position.x+distance+10, closestA.position.y+distance+10, closestA.position.z+distance+10)
+    camera.position.set(midpointX, midpointY,midpointZ+100)
  
     controls.target.copy(closestA.position);
 
@@ -121,12 +124,108 @@
             scene.add(line);
         }
     }
+    var testA = `(${Math.floor(closestA.position.x)}, ${Math.floor(closestA.position.y)}, ${Math.floor(closestA.position.z)})`;
+    var testB = `(${Math.floor(closestB.position.x)}, ${Math.floor(closestB.position.y)}, ${Math.floor(closestB.position.z)})`;
+    var aOff, bOff;
+    if (closestA.position.y > closestB.position.y){
+        aOff = 2;
+        bOff = -5;
+    } else {
+        aOff = -5;
+        bOff = 2;
+    }
+    // Lets see if we can add text
+    var fontLoader = new THREE.FontLoader();
+    fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function(font) {
+        //  Creates the name mesh
+        pointA = createTextMesh(testA, font, 100, materialSelector("Red"));
 
+        pointA.position.x = closestA.position.x
+        pointA.position.y = closestA.position.y+aOff
+        pointA.position.z = closestA.position.z
+        pointA.scale.set(.02,.02,.02)
+
+        scene.add(pointA);
+
+        pointB = createTextMesh(testB, font, 100, materialSelector("Red"));
+
+        pointB.position.x = closestB.position.x
+        pointB.position.y = closestB.position.y+bOff
+        pointB.position.z = closestB.position.z
+        pointB.scale.set(.02,.02,.02)
+
+        
+
+        scene.add(pointB);
+        
+        dist = createTextMesh(`Distance: ${distance}`, font, 100, materialSelector("White"));
+
+        dist.position.x = ((closestB.position.x+closestA.position.x)/2)+5
+        dist.position.y = ((closestB.position.y+closestA.position.y)/2)
+        dist.position.z = ((closestB.position.z+closestA.position.z)/2)
+        dist.scale.set(.01,.01,.01)
+        dist.lookAt(camera.position);
+        scene.add(dist);
+
+    });
+    function createTextMesh(text, font, size, mat) {
+       var geo = new THREE.TextGeometry(text, {
+            font: font,
+            size: size,
+            height: 5,
+            curveSegments: 12,
+            bevelEnabled: false,
+            material: 1,
+            extrudeMaterial: 1
+        });
+
+        //geo.center();
+        //geo.computeBoundingBox();
+
+        return new THREE.Mesh(geo, mat);
+    }
+
+    //  This function takes in the value from one of the two material drop downs and returns a corresponding material.
+    function materialSelector(choice) {
+        switch (choice) {
+            case "White":
+                return new THREE.MeshBasicMaterial({
+                    color: 0xEEEEEE,
+                    //specular: 0x555555,
+                    //shininess: 0
+                });
+                break;
+            case "Blue":
+                return new THREE.MeshPhongMaterial({
+                    color: 0x40476d,
+                    specular: 0x555555,
+                    shininess: 30
+                });
+                break;
+            case "Green":
+                return new THREE.MeshPhongMaterial({
+                    color: 0x436436,
+                    specular: 0x555555,
+                    shininess: 30
+                });
+                break;
+            case "Polka Dots":
+                return new THREE.MeshPhongMaterial({
+                    color: 0xc8bfc7,
+                    specular: 0x555555,
+                    shininess: 30
+                });
+                break;
+          }
+    }
     // Now lets render it all!
     var render = function () {
         requestAnimationFrame(render);
         renderer.render(scene, camera)
         controls.update();
+        dist.lookAt(camera.position);
+        pointB.lookAt(camera.position)
+        pointA.lookAt(camera.position)
     }
     render()
 </script>
