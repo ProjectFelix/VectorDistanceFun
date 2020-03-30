@@ -1,0 +1,133 @@
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        width: 100%;
+    }
+    canvas {
+        display: block;
+    }
+</style>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
+<script src="https://unpkg.com/three@0.85.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+
+    // The distance between the two points is printed in the console
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 3000);
+    camera.position.set(1000,1000,1000);
+    //camera.lookAt(500,500,-500);
+    var renderer = new THREE.WebGLRenderer({antialias: true});
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    renderer.setClearColor('#000000');
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    var points = []
+    
+    var geo = new THREE.SphereGeometry(2,20,20);
+    // make materials for the points
+    var closestMat = new THREE.MeshBasicMaterial({color:'red'}); // closest point material
+    var mat = new THREE.MeshBasicMaterial({color:'cyan'}); // 'the rest'
+    for (let i = 0; i < 1000; i++) {
+
+    // creating 1000 random points
+    var mesh = new THREE.Mesh(geo,mat);
+    mesh.position.set(Math.random()*1000, Math.random()*1000, Math.random()*1000)
+    points.push(mesh);
+
+    }
+
+    // Now lets iterate through and find the two closest points
+    var closestA, closestB
+    var distance = 1000;
+    for (let x = 0; x < points.length; x++){
+        for (let y = x+1; y < points.length; y++){
+            let a = points[x];
+            let b = points[y];
+            let thisDistance = Math.sqrt((a.position.x-b.position.x)**2 + (a.position.y-b.position.y)**2 + (a.position.z-b.position.z)**2);
+            if (thisDistance < distance){
+                distance = thisDistance;
+                closestA = a;
+                closestB = b
+            }
+        }
+    }
+
+    // It was hard finding them, so I just automatically move the camera now
+    camera.position.set(closestA.position.x+distance+10, closestA.position.y+distance+10, closestA.position.z+distance+10)
+ 
+    controls.target.copy(closestA.position);
+
+    for (let k = 0; k < points.length; k++){
+         if (points[k] === closestA || points[k] === closestB){
+
+             // I tried changing the color of the material, but it changed it for all of them
+             // So instead I just make new objects and replace them
+             var mesh = new THREE.Mesh(geo,closestMat);
+             mesh.position.set(points[k].position.x, points[k].position.y,points[k].position.z)
+             scene.add(mesh);
+             
+         } else scene.add(points[k]); // Otherwise just adding what we already created
+     }
+     // This is just making a line between the two points. Apparently you cant change the line thickness
+    var shortMat = new THREE.LineBasicMaterial({color: 'red', linewidth: 5});
+    var shortGeo = new THREE.BufferGeometry().setFromPoints([closestA.position, closestB.position]);
+    var shortLine = new THREE.Line(shortGeo,shortMat);
+    scene.add(shortLine);
+    // Ill figure out how to draw text on the screen later
+    console.log(`The two closest points are: `);
+    console.log(`(${Math.floor(closestA.position.x)},${Math.floor(closestA.position.y)},${Math.floor(closestA.position.z)}) and (${Math.floor(closestB.position.x)},${Math.floor(closestB.position.y)},${Math.floor(closestB.position.z)}) `)
+    console.log(`At a distance of ${distance}`);
+    // I set all this up to create a grid to better display the area, in my opnion
+    var lineMat = new THREE.LineBasicMaterial({color: 0xFFFFFF});
+    for (let i = 0; i < 1001; i += 100){
+        for (let j = 0; j < 1001; j += 100){
+            let square = [];
+            square.push(new THREE.Vector3(i,j,0));
+            square.push(new THREE.Vector3(i+100,j,0));
+            square.push(new THREE.Vector3(i+100,j+100,0));
+            square.push(new THREE.Vector3(i,j+100,0));
+            square.push(new THREE.Vector3(i,j,0));
+            var lineGeo = new THREE.BufferGeometry().setFromPoints(square);
+            var line = new THREE.Line(lineGeo, lineMat);
+            scene.add(line);
+        }
+    }
+    for (let i = 0; i < 1001; i += 100){
+        for (let j = 0; j < 1001; j += 100){
+            let square = [];
+            square.push(new THREE.Vector3(0,i,j));
+            square.push(new THREE.Vector3(0,i+100,j));
+            square.push(new THREE.Vector3(0,i+100,j+100));
+            square.push(new THREE.Vector3(0,i,j+100));
+            square.push(new THREE.Vector3(0,i,j));
+            var lineGeo = new THREE.BufferGeometry().setFromPoints(square);
+            var line = new THREE.Line(lineGeo, lineMat);
+            scene.add(line);
+        }
+    }
+    for (let i = 0; i < 1001; i += 100){
+        for (let j = 0; j < 1001; j += 100){
+            let square = [];
+            square.push(new THREE.Vector3(i,0,j));
+            square.push(new THREE.Vector3(i+100,0,j));
+            square.push(new THREE.Vector3(i+100,0,j+100));
+            square.push(new THREE.Vector3(i,0,j+100));
+            square.push(new THREE.Vector3(i,0,j));
+            var lineGeo = new THREE.BufferGeometry().setFromPoints(square);
+            var line = new THREE.Line(lineGeo, lineMat);
+            scene.add(line);
+        }
+    }
+
+    // Now lets render it all!
+    var render = function () {
+        requestAnimationFrame(render);
+        renderer.render(scene, camera)
+        controls.update();
+    }
+    render()
+</script>
+</body>
